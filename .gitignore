@@ -9,8 +9,10 @@ Vivado/*
 # but:
 # NOT xpr file
 !Vivado/*.xpr
-# NOT synthesis/simulation sources' 
+# NOT synthesis/simulation sources 
 !Vivado/*.srcs
+# NOT simulation vaweforms conf.
+!Vivado/*.wcfg
 
 # ignore Local folder
 Local/*

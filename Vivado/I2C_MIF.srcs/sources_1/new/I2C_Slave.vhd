@@ -25,6 +25,16 @@ entity I2C_slave is
 end entity I2C_slave;
 ------------------------------------------------------------
 architecture arch of I2C_slave is
+
+component debounce is
+  generic (
+    WAIT_CYCLES : integer := 5);
+  port (
+    signal_in  : in  std_logic;
+    signal_out : out std_logic;
+    clk        : in  std_logic);
+end component;
+
   -- this assumes that system's clock is much faster than SCL
   constant DEBOUNCING_WAIT_CYCLES : integer   := 4;
   
@@ -71,7 +81,7 @@ architecture arch of I2C_slave is
 begin
 
   -- debounce SCL and SDA
-  SCL_debounce : entity work.debounce
+  SCL_debounce : debounce
     generic map (
       WAIT_CYCLES => DEBOUNCING_WAIT_CYCLES)
     port map (
@@ -81,7 +91,7 @@ begin
 
   -- it might not make sense to debounce SDA, since master
   -- and slave can both write to it...
-  SDA_debounce : entity work.debounce
+  SDA_debounce : debounce
     generic map (
       WAIT_CYCLES => DEBOUNCING_WAIT_CYCLES)
     port map (
@@ -93,9 +103,22 @@ begin
   begin
     if rising_edge(clk) then
       -- save SCL in registers that are used for debouncing
-      scl_reg <= scl;
-      sda_reg <= sda;
-
+ 
+      -- scl_reg <= scl;
+      -- sda_reg <= sda;
+            
+      if (scl = '1' or scl = 'H') then
+        scl_reg <= '1';
+      else 
+        scl_reg <= '0';
+      end if; 
+      
+      if (sda = '1' or sda = 'H') then
+        sda_reg <= '1';
+      else 
+        sda_reg <= '0';
+      end if; 
+           
       -- Delay debounced SCL and SDA by 1 clock cycle
       scl_prev_reg   <= scl_debounced;
       sda_prev_reg   <= sda_debounced;
