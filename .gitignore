@@ -1,0 +1,25 @@
+# ignore all logs
+*.git
+
+# ignore stuff folders
+mug
+
+# ignore Vivado subfolders
+Vivado/*
+# but:
+# NOT xpr file
+!Vivado/*.xpr
+# NOT synthesis/simulation sources' 
+!Vivado/*.srcs
+
+# ignore Local folder
+Local/*
+
+# Ignore any files with DRAFT suffix
+*DRAFT* 
+
+# Ignore Word temporary documents
+*~$*.doc*
+
+# Ignore any files with BETA suffix
+*BETA* 
