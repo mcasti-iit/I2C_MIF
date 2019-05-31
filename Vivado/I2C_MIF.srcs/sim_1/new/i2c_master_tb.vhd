@@ -19,8 +19,10 @@
 ----------------------------------------------------------------------------------
 
 
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.std_logic_arith.all;
+  use ieee.std_logic_unsigned.all;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -88,6 +90,7 @@ signal rst                  :  STD_LOGIC;                    --active high reset
 signal read_req             :  STD_LOGIC;                    --data request from master
 signal data_valid_master    :  STD_LOGIC;                    --data valid from master
 signal data_from_master     :  STD_LOGIC_VECTOR(7 DOWNTO 0); --data read from master
+signal data_to_master       :  STD_LOGIC_VECTOR(7 DOWNTO 0); --data sent to master
 
 begin
 
@@ -124,7 +127,7 @@ i2c_slave_i : I2C_slave
     rst                 => rst,
     -- User interface
     read_req            => read_req, 
-    data_to_master      => "00001111",
+    data_to_master      => x"FF", -- data_to_master,
     data_valid          => data_valid_master,
     data_from_master    => data_from_master
     );
@@ -150,6 +153,18 @@ begin
     end loop;
 end process proc_clock;
 
+proc_data_to_master : process
+begin
+    data_to_master <= x"00";
+    data_to_master_loop : loop
+       wait until rising_edge(clk);
+       wait for 1 ns;
+       data_to_master <= data_to_master + 1;
+    end loop;
+    wait;
+end process proc_data_to_master;   
+
+
 proc_data_transfer : process 
 begin
     addr    <= "0000000";
@@ -168,20 +183,6 @@ begin
     addr    <= "0001000";
     data_wr <= "10100101";
     rw      <= '0';
-    ena     <= '1';
-    wait until rising_edge(busy);
-    wait until rising_edge(clk);
-    wait for 1 ns;
-    rw      <= '0';
-    ena     <= '0';
-    
---  READ
-    wait for 50 us;
-    wait until rising_edge(clk);
-    wait for 1 ns;
-    addr    <= "0001000";
- --   data_wr <= "10100101";
-    rw      <= '1';
     ena     <= '1';
     wait until rising_edge(busy);
     wait until rising_edge(clk);
@@ -229,7 +230,22 @@ begin
     rw      <= '0';
     ena     <= '0';
     
-    
+    wait for 500 us; 
+       
+--  READ
+    wait for 50 us;
+    wait until rising_edge(clk);
+    wait for 1 ns;
+    addr    <= "0001000";
+ --   data_wr <= "10100101";
+    rw      <= '1';
+    ena     <= '1';
+   wait until rising_edge(busy);
+   wait until rising_edge(clk);
+   wait for 1 ns;
+   rw      <= '0';
+   ena     <= '0';
+       
 --  Single-byte read sequence   
     wait for 50 us;
     wait until rising_edge(clk);

@@ -28,6 +28,7 @@ architecture arch of I2C_slave is
 
 component debounce is
   generic (
+    RESET_VALUE : std_logic := '0';
     WAIT_CYCLES : integer := 5);
   port (
     signal_in  : in  std_logic;
@@ -93,6 +94,7 @@ begin
   -- and slave can both write to it...
   SDA_debounce : debounce
     generic map (
+      RESET_VALUE   => '1',
       WAIT_CYCLES => DEBOUNCING_WAIT_CYCLES)
     port map (
       clk        => clk,
