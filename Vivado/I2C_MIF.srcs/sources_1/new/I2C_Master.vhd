@@ -66,7 +66,14 @@ ARCHITECTURE logic OF i2c_master IS
   SIGNAL data_rx       : STD_LOGIC_VECTOR(7 DOWNTO 0);   --data received from slave
   SIGNAL bit_cnt       : INTEGER RANGE 0 TO 7 := 7;      --tracks bit number in transaction
   SIGNAL stretch       : STD_LOGIC := '0';               --identifies if slave is stretching scl
+  
+  signal sda_in        : std_logic;
+  signal scl_in        : std_logic;
+  
 BEGIN
+
+sda_in <= '1' when (sda = 'H') else sda;   -- A way to manage Sda_i = 'H' during simulation.
+scl_in <= '1' when (scl = 'H') else scl;   -- A way to manage Scl_i = 'H' during simulation.
 
   --generate the timing for the bus clock (scl_clk) and the data clock (data_clk)
   PROCESS(clk, reset_n)
@@ -91,7 +98,7 @@ BEGIN
           data_clk <= '1';
         WHEN divider*2 TO divider*3-1 =>  --third 1/4 cycle of clocking
           scl_clk <= '1';                 --release scl
-          IF(scl = '0') THEN              --detect if slave is stretching clock
+          IF(scl_in = '0') THEN              --detect if slave is stretching clock
             stretch <= '1';
           ELSE
             stretch <= '0';
@@ -216,13 +223,13 @@ BEGIN
               ack_error <= '0';                     --reset acknowledge error output
             END IF;
           WHEN slv_ack1 =>                          --receiving slave acknowledge (command)
-            IF(sda /= '0' OR ack_error = '1') THEN  --no-acknowledge or previous no-acknowledge
+            IF(sda_in /= '0' OR ack_error = '1') THEN  --no-acknowledge or previous no-acknowledge
               ack_error <= '1';                     --set error output if no-acknowledge
             END IF;
           WHEN rd =>                                --receiving slave data
-            data_rx(bit_cnt) <= sda;                --receive current slave data bit
+            data_rx(bit_cnt) <= sda_in;                --receive current slave data bit
           WHEN slv_ack2 =>                          --receiving slave acknowledge (write)
-            IF(sda /= '0' OR ack_error = '1') THEN  --no-acknowledge or previous no-acknowledge
+            IF(sda_in /= '0' OR ack_error = '1') THEN  --no-acknowledge or previous no-acknowledge
               ack_error <= '1';                     --set error output if no-acknowledge
             END IF;
           WHEN stop =>
