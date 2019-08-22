@@ -26,7 +26,8 @@
 --     Adjusted timing of SCL during start and stop conditions
 --   Version 2.2 02/05/2015 Scott Larson
 --     Corrected small SDA glitch introduced in version 2.1
--- 
+--   Version 2.3 22/08/2015 Maurizio Casti
+--     Added reset to some registers and the "reset" state to state machine
 --------------------------------------------------------------------------------
 
 LIBRARY ieee;
@@ -53,7 +54,7 @@ END i2c_master;
 
 ARCHITECTURE logic OF i2c_master IS
   CONSTANT divider  :  INTEGER := (input_clk/bus_clk)/4; --number of clocks in 1/4 cycle of scl
-  TYPE machine IS(ready, start, command, slv_ack1, wr, rd, slv_ack2, mstr_ack, stop); --needed states
+  TYPE machine IS(reset, ready, start, command, slv_ack1, wr, rd, slv_ack2, mstr_ack, stop); --needed states
   SIGNAL state         : machine;                        --state machine
   SIGNAL data_clk      : STD_LOGIC;                      --data clock for sda
   SIGNAL data_clk_prev : STD_LOGIC;                      --data clock during previous system clock
@@ -80,8 +81,11 @@ scl_in <= '1' when (scl = 'H') else scl;   -- A way to manage Scl_i = 'H' during
     VARIABLE count  :  INTEGER RANGE 0 TO divider*4;  --timing for clock generation
   BEGIN
     IF(reset_n = '0') THEN                --reset asserted
-      stretch <= '0';
-      count := 0;
+      count         := 0;
+      stretch       <= '0';
+      scl_clk       <= '0';
+      data_clk      <= '0';
+      data_clk_prev <= '0';
     ELSIF(clk'EVENT AND clk = '1') THEN
       data_clk_prev <= data_clk;          --store previous value of data clock
       IF(count = divider*4-1) THEN        --end of timing cycle
@@ -115,16 +119,21 @@ scl_in <= '1' when (scl = 'H') else scl;   -- A way to manage Scl_i = 'H' during
   PROCESS(clk, reset_n)
   BEGIN
     IF(reset_n = '0') THEN                 --reset asserted
-      state <= ready;                      --return to initial state
+      state <= reset;                      --return to initial state
       busy <= '1';                         --indicate not available
       scl_ena <= '0';                      --sets scl high impedance
       sda_int <= '1';                      --sets sda high impedance
       ack_error <= '0';                    --clear acknowledge error flag
       bit_cnt <= 7;                        --restarts data bit counter
       data_rd <= "00000000";               --clear data read port
+      addr_rw <= x"00";                    --clear read/write address
+      data_tx <= x"00";                    --clear data to write
+      data_rx <= x"00";                    --clear data received
     ELSIF(clk'EVENT AND clk = '1') THEN
       IF(data_clk = '1' AND data_clk_prev = '0') THEN  --data clock rising edge
         CASE state IS
+          WHEN reset =>
+            state <= ready;
           WHEN ready =>                      --idle state
             IF(ena = '1') THEN               --transaction requested
               busy <= '1';                   --flag busy
